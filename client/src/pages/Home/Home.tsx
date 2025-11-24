@@ -59,7 +59,7 @@ function Home() {
     setFilesData([]);
   }
 
-  const sendFiles = () => {
+  const sendFiles = async () => {
     if (!files.length || !socketRef.current) return;
 
     // Send files length first
@@ -68,33 +68,25 @@ function Home() {
       value: files.length.toString()
     }));
 
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        // Send IP recipient
-        socketRef.current?.send(JSON.stringify({
-          type: "recipient",
-          value: recipient as string
-        }));
+    // Send recipient once (before all files)
+    socketRef.current.send(JSON.stringify({
+      type: "recipient",
+      value: recipient as string
+    }));
 
-        // Send MetaData
-        socketRef.current?.send(JSON.stringify({
-          type: "meta-data",
-          value: JSON.stringify({
-            "fileName": file.name,
-            "fileSize": file.size,
-            "fileType": file.type
-          })
-        }));
+    for (const file of files) {
+      socketRef.current?.send(JSON.stringify({
+        type: "meta-data",
+        value: JSON.stringify({
+          "fileName": file.name,
+          "fileSize": file.size,
+          "fileType": file.type
+        })
+      }));
 
-        // Send file bytes
-        socketRef.current?.send(reader.result as ArrayBuffer);
-      }
-      reader.onerror = () => {
-        console.error(`Read failed ${reader.error}`);
-      }
-      reader.readAsArrayBuffer(file);
-    })
+      const buffer = await file.arrayBuffer();
+      socketRef.current?.send(buffer);
+    }
 
     setFiles([]);
   };
