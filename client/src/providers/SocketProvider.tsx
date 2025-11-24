@@ -7,8 +7,14 @@ import { WEBSOCKET_URL } from "../config/env";
 import { SocketContext } from "./socket-context";
 
 type StringServerMessage = {
-  type: "clients" | "error" | "files-length" | "message";
-  value: Array<string> | string | number;
+  type: "clients" | "error" | "files-length" | "message" | "meta-data";
+  value: Array<string> | string | number | MetaData;
+}
+
+export type MetaData = {
+  fileName: string;
+  fileSize: number;
+  fileType: string;
 }
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
@@ -16,7 +22,11 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     const socketRef = useRef<WebSocket>(null);
     const [clients, setClients] = useState<Array<string>>([])
     const [filesLength, setFilesLength] = useState<number>(0);
-    const [filesData, setFilesData] = useState<Array<Uint8Array | null>>([]);
+    const [filesData, setFilesData] = useState<Array<{ metadata: MetaData | null, bytes: Uint8Array | null }>>([]);
+
+    useEffect(() => {
+      console.log("🚀 ~ SocketProvider.tsx:27 ~ useEffect ~ filesData:", filesData)
+    }, [filesData])
 
     // Establish Socket Connection
     useEffect(() => {
@@ -33,13 +43,17 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
               setClients(serverMessage?.value as Array<string>);
             }
             if (serverMessage?.type === "error") {
-              toast(serverMessage?.value);
+              toast(serverMessage?.value as string);
             }
             if (serverMessage?.type === "files-length") {
               setFilesLength(Number(serverMessage?.value));
             }
+            if (serverMessage?.type === "meta-data") {
+              console.log("🚀 ~ SocketProvider.tsx:48 ~ SocketProvider ~ serverMessage?.value:", JSON.parse(serverMessage?.value as string) as MetaData)
+              setFilesData((prevFiles) => [...prevFiles, { metadata: JSON.parse(serverMessage?.value as string) as MetaData, bytes: null }]);
+            }
             if (serverMessage?.type === "message") {
-              toast(serverMessage?.value);
+              toast(serverMessage?.value as string);
             }
           }
 
@@ -48,8 +62,18 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
             const blob = event.data;
             blob.arrayBuffer().then((buffer) => {
               console.log("FILE DATA RECEIVED ✅");
-              console.log("🚀 ~ SocketProvider.tsx:40 ~ SocketProvider ~ fileData:", buffer)
-              setFilesData((prevFiles) => [...prevFiles, new Uint8Array(buffer)]);
+
+              setFilesData((prevFiles) => {
+                const updatedFiles = [...prevFiles];
+
+                const fileWithMetadata = updatedFiles.find((file) => file.metadata !== null && file.bytes === null);
+                if (fileWithMetadata) {
+                  fileWithMetadata.bytes = new Uint8Array(buffer);
+                }
+
+                return updatedFiles;
+
+              })
               toast("File received ✅");
             })
           }
@@ -57,8 +81,14 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
          else if (event.data instanceof ArrayBuffer) {
             const buffer = event.data;
             console.log("FILE DATA RECEIVED ✅");
-            console.log("🚀 ~ SocketProvider.tsx:40 ~ SocketProvider ~ fileData:", buffer)
-            setFilesData((prevFiles) => [...prevFiles, new Uint8Array(buffer)]);
+            setFilesData((prevFiles) => {
+              const updatedFiles = [...prevFiles];
+              const fileWithMetadata = updatedFiles.find((file) => file.metadata !== null && file.bytes === null);
+              if (fileWithMetadata) {
+                fileWithMetadata.bytes = new Uint8Array(buffer);
+              }
+              return updatedFiles;
+            })
             toast("File received ✅");
           }
 

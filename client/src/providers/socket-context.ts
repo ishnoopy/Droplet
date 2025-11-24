@@ -1,4 +1,5 @@
 import { createContext, useContext, type RefObject } from "react";
+import type { MetaData } from "./SocketProvider";
 
 // To support hot reloading, we must separate stateful components from functional components.
 type SocketContextType = {
@@ -7,8 +8,8 @@ type SocketContextType = {
     setClients: (v: Array<string>) => void;
     filesLength: number;
     setFilesLength: (v: number) => void;
-    filesData: Array<Uint8Array | null>;
-    setFilesData: (v: Array<Uint8Array | null>) => void;
+    filesData: Array<{ metadata: MetaData | null, bytes: Uint8Array | null }>;
+    setFilesData: (v: Array<{ metadata: MetaData | null, bytes: Uint8Array | null }>) => void;
 };
 
 export const SocketContext = createContext<SocketContextType | null>(null);

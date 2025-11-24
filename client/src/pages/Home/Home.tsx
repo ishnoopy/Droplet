@@ -39,13 +39,13 @@ function Home() {
     if (filesData.length === 0 || filesData.length !== filesLength) return;
 
     // Trigger download of each file
-    filesData.forEach((fileData, index: number) => {
+    filesData.forEach((fileData) => {
       if (!fileData) return;
-      const blob = new Blob([fileData.buffer as ArrayBuffer], { type: "application/octet-stream" });
+      const blob = new Blob([fileData.bytes as unknown as ArrayBuffer], { type: fileData.metadata?.fileType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${Date.now()}-${index+1}.jpg`;
+      a.download = fileData.metadata?.fileName || `file-${Date.now()}`;
       a.click();
       URL.revokeObjectURL(url);
     });
@@ -75,6 +75,16 @@ function Home() {
         socketRef.current?.send(JSON.stringify({
           type: "recipient",
           value: recipient as string
+        }));
+
+        // Send MetaData
+        socketRef.current?.send(JSON.stringify({
+          type: "meta-data",
+          value: JSON.stringify({
+            "fileName": file.name,
+            "fileSize": file.size,
+            "fileType": file.type
+          })
         }));
 
         // Send file bytes

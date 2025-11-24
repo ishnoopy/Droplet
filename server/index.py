@@ -30,7 +30,7 @@ async def listen(ws: WebSocket):
         await broadcast_clients()
 
         recipient: str | None = None
-        files: list[bytes] = []
+        files: list[dict] = []  # List of objects: { "metadata": ..., "bytes": ... }
         files_length: int = 0 # Number of files to send
 
         while True:
@@ -39,10 +39,11 @@ async def listen(ws: WebSocket):
             # The following sequence of events happens:
             # 1. receive recipient
             # 2. receive files-length
-            # 3. receive file bytes
-            # 4. send files to recipient
-            # 5. send confirmation to sender
-            # 6. repeat
+            # 3. receive meta-data
+            # 4. receive file bytes
+            # 5. send files to recipient
+            # 6. send confirmation to sender
+            # 7. repeat
 
             if message.get("type") == "websocket.receive":
                 if message.get("text") is not None:
@@ -57,6 +58,10 @@ async def listen(ws: WebSocket):
                             files = []
                             continue
 
+                        if message_text.get('type') == "meta-data":
+                            files.append({"metadata": message_text.get("value"), "bytes": None})
+                            continue
+
                     except json.JSONDecodeError:
                         await ws.send_text(json.dumps({"type": "error", "value": "Invalid JSON"}))
                         break
@@ -64,7 +69,7 @@ async def listen(ws: WebSocket):
                 elif message.get('bytes') is not None:
                     if files_length > 0:
 
-                        files.append(message.get('bytes'))
+                        files[-1]["bytes"] = message.get('bytes') # Set the bytes of the last file in the list as we expect that metadata are received before bytes
                         if files_length == len(files):
 
                             recipient_connection = CLIENTS[recipient]
@@ -72,7 +77,10 @@ async def listen(ws: WebSocket):
                             await recipient_connection.send_text(json.dumps({"type": "files-length", "value": files_length}))
 
                             for file in files:
-                                await recipient_connection.send_bytes(file)
+                                if file.get("metadata") is not None:
+                                    await recipient_connection.send_text(json.dumps({"type": "meta-data", "value": file.get("metadata")}))
+                                if file.get("bytes") is not None:
+                                    await recipient_connection.send_bytes(file.get("bytes"))
 
                             # Reset variables
                             files = []

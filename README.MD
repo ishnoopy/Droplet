@@ -159,7 +159,6 @@ pnpm run dev:host
 - Firewall settings may need to allow connections on ports 8000 (server) and 5173 (client)
 - The server identifies clients by their `IP:PORT` combination
 - Files are transferred through the server as an intermediary
-- Only images are supported as of now ⚠️
 
 ## 🐛 Troubleshooting
 
