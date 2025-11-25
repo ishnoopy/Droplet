@@ -8,6 +8,25 @@ A peer-to-peer file sharing application built with FastAPI (WebSocket server) an
 - **Node.js** and **pnpm** (for client)
 - All devices must be on the same network
 
+## 🐳 Run Everything with Docker Compose
+
+1. **Set up client env vars**
+   - Create `client/.env` with the same values described in [Client Setup & Operation](#-client-setup--operation).
+2. **Expose your LAN IP in compose file**
+   - Update the `client` and `server` `ports` entries in `docker-compose.yml` so `192.168.1.2` matches your machine's local IP.
+3. **Build & start**
+   - From the project root run:
+
+     ```bash
+     docker compose up --build
+     ```
+
+4. **Access the apps**
+   - Client: `http://YOUR_LOCAL_IP:5173`
+   - Server WebSocket endpoint: `ws://YOUR_LOCAL_IP:8000/ws`
+
+> ⚙️ Prefer to develop locally? The dev instructions below remain exactly the same—use them whenever you need hot reload or faster iteration.
+
 ## 🚀 Server Setup & Operation
 
 ### 1. Navigate to Server Directory
