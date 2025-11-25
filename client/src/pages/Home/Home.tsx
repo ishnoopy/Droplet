@@ -1,4 +1,5 @@
-import { useEffect, useEffectEvent, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useState } from "react";
+import { toast } from "sonner";
 import "../../App.css";
 import { AlertDialog } from "../../components/AlertDialog";
 import { useSocketContext } from "../../providers/socket-context";
@@ -60,6 +61,12 @@ function Home() {
   }
 
   const sendFiles = async () => {
+
+    if (!recipient) {
+      toast.error("Please select a recipient");
+      return;
+    }
+
     if (!files.length || !socketRef.current) return;
 
     // Send files length first
@@ -91,9 +98,10 @@ function Home() {
     setFiles([]);
   };
 
-  const handleSelectClient = (clientIp: string) => {
+  // Cache the handleSelectClient function to prevent re-rendering of ClientsList component when this component re-renders.
+  const handleSelectClient = useCallback((clientIp: string | null) => {
     setRecipient(clientIp)
-  }
+  }, [])
 
   return (
     <div className="min-h-screen bg-background">

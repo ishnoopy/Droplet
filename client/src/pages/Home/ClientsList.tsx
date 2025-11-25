@@ -1,3 +1,4 @@
+import { memo, useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -8,10 +9,17 @@ import {
 
 type ClientsListProps = {
     clients: Array<string>;
-    handleSelectClient: (e: string) => void;
+    handleSelectClient: (e: string | null) => void;
 }
 
-export default function ClientsList({ clients, handleSelectClient }: ClientsListProps) {
+function ClientsList({ clients, handleSelectClient }: ClientsListProps) {
+
+  useEffect(() => {
+    if (clients.length === 0) {
+      handleSelectClient(null);
+    }
+  }, [clients, handleSelectClient])
+
   return (
     <div className="space-y-3">
       <label className="text-sm font-medium text-foreground">
@@ -43,3 +51,5 @@ export default function ClientsList({ clients, handleSelectClient }: ClientsList
     </div>
   );
 }
+
+export default memo(ClientsList);
