@@ -72,7 +72,11 @@ async def listen(ws: WebSocket):
                         files[-1]["bytes"] = message.get('bytes') # Set the bytes of the last file in the list as we expect that metadata are received before bytes
                         if files_length == len(files):
 
-                            recipient_connection = CLIENTS[recipient]
+                            recipient_connection = CLIENTS.get(recipient)
+                            if recipient_connection is None:
+                                await ws.send_text(json.dumps({"type": "error", "value": "Recipient not found"}))
+                                continue
+
                             # Send files length to the recipient
                             await recipient_connection.send_text(json.dumps({"type": "files-length", "value": files_length}))
 
